@@ -1,10 +1,64 @@
 {
-  "prices": {},
-  "batches": {},
-  "testimonials": [],
-  "videos": [],
-  "reads": [],
-  "press": [],
-  "events": [],
-  "removed": []
+  "prices": {
+    "playEarly": 22500
+  },
+  "batches": {
+    "playsophy": "6 January 2027"
+  },
+  "testimonials": [
+    {
+      "who": "Meera",
+      "age": "41",
+      "city": "Goa",
+      "course": "Group Classes",
+      "words": "TEST ENTRY. Three months of Monday mornings and I can finally do a pull-up.",
+      "video": null
+    }
+  ],
+  "videos": [
+    {
+      "id": "dNDzgkRulg4",
+      "short": false,
+      "t": 0,
+      "title": "There is fire within me",
+      "places": [
+        "about",
+        "courses"
+      ]
+    }
+  ],
+  "reads": [
+    {
+      "url": "https://danedwardes.com/why-you-were-a-better-mover-at-seven/",
+      "title": "Why You Were a Better Mover at Seven",
+      "src": "Dan Edwardes",
+      "d": "TEST ENTRY. Why play beats training.",
+      "img": "u/cf70b6db0db4.jpg"
+    }
+  ],
+  "press": [
+    {
+      "url": "https://yourstory.com/herstory/2021/07/100-emerging-women-leaders-woman-domestic-violence-fitness-trainer",
+      "label": "TEST ENTRY: YourStory feature"
+    }
+  ],
+  "events": [
+    {
+      "type": "Retreat",
+      "title": "Back to Your Roots (TEST)",
+      "dates": "12 to 15 Feb 2027",
+      "end": "2027-02-15",
+      "where": "North Goa",
+      "price": 28000,
+      "unit": "per person, stay included",
+      "d": "TEST ENTRY. Four days of movement and play outdoors.",
+      "img": "u/7d4f7f8576ae.jpg"
+    }
+  ],
+  "removed": [
+    {
+      "kind": "press",
+      "key": "https://www.imdb.com/name/nm18615165/"
+    }
+  ]
 }
