@@ -1,0 +1,42 @@
+# Every 30 minutes: read Sudipta's "Update my website" form answers, rebuild the site if anything changed, publish.
+# Repo variable MM_NOINDEX=1 (set on the preview/test repo only) keeps that copy out of search engines.
+name: Content sync from Sudipta's form
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: content-sync
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      MM_NOINDEX: ${{ vars.MM_NOINDEX }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install the photo resizer
+        run: npm install --no-save --no-package-lock sharp@0.34.4
+      - name: Read the form answers
+        run: node sync-content.js
+      - name: Rebuild and publish if something changed
+        run: |
+          git config user.name "mindfulmonkey-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain content/updates.json images/u)" ]; then
+            node generate.js
+            git add -A -- . ':!node_modules'
+            git commit -m "Website update from Sudipta's form"
+            git push
+          elif [ $(( $(date +%s) - $(git log -1 --format=%ct) )) -gt $(( 45 * 86400 )) ]; then
+            # GitHub pauses scheduled jobs after 60 quiet days; a tiny commit keeps this one running
+            date -u +%F > content/keepalive.txt
+            git add content/keepalive.txt
+            git commit -m "Keep the content sync active"
+            git push
+          else
+            echo "No changes"
+          fi

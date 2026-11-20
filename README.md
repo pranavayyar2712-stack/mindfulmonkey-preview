@@ -1,2 +1,2 @@
-# Mindful Monkey site preview
-Draft preview of the v5 redesign for review. Not the live site.
+# Mindful Monkey: preview / test copy
+Test copy of mindfulmonkeycoach.com wired to a TEST "Update my website" form. Not indexed by search engines.

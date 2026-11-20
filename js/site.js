@@ -33,6 +33,14 @@
     rv.forEach(function (el) { io.observe(el); });
   } else rv.forEach(function (el) { el.classList.add("in"); });
 
+  /* course cards turn blue on hover; touch screens have no hover, so there the card crossing the middle of the screen lights up */
+  if (window.matchMedia && window.matchMedia("(hover: none)").matches && "IntersectionObserver" in window) {
+    var cio = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { e.target.classList.toggle("lit", e.isIntersecting); });
+    }, { rootMargin: "-42% 0px -42% 0px" });
+    document.querySelectorAll(".card").forEach(function (c) { cio.observe(c); });
+  }
+
   /* WhatsApp form: composes a message and opens WhatsApp (no data stored anywhere) */
   document.querySelectorAll("form.wa-form").forEach(function (f) {
     f.addEventListener("submit", function (ev) {
@@ -84,6 +92,87 @@
     }).catch(function () {});
   }
 
+  /* Home hero: a self-hosted, silent loop (images/hero-loop*.mp4, cut from "Back to your roots" from 0:41).
+     A plain muted <video playsinline> autoplays on phones too, which the YouTube embed never did.
+     Phones get the smaller portrait crop. The photo stays underneath until the video is actually playing.
+     Off for ?static, reduced motion and data-saver. */
+  var still = /[?&]static(?:[=&#]|$)/.test(location.search) || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var NC = "https://www.youtube-nocookie.com/embed/";
+  var hv = document.querySelector("video.hero-vid");
+  var saveData = navigator.connection && navigator.connection.saveData;
+  if (hv && !still && !saveData) {
+    var small = window.matchMedia("(max-width: 760px)").matches;
+    hv.muted = true; hv.defaultMuted = true; hv.setAttribute("muted", "");
+    hv.src = hv.getAttribute(small ? "data-sm" : "data-lg");
+    hv.preload = "auto";
+    hv.addEventListener("playing", function () { hv.classList.add("on"); });
+    var tryPlay = function () { var pr = hv.play(); if (pr && pr.catch) pr.catch(function () {}); };
+    tryPlay();
+    // iOS Low Power Mode blocks autoplay; the first touch anywhere starts it instead
+    var kick = function () { if (hv.paused) tryPlay(); window.removeEventListener("touchstart", kick); window.removeEventListener("scroll", kick); };
+    window.addEventListener("touchstart", kick, { passive: true }); window.addEventListener("scroll", kick, { passive: true });
+    document.addEventListener("visibilitychange", function () { if (!document.hidden && hv.paused) tryPlay(); });
+  }
+  var modal = null;
+  function closeYt() { if (modal) { modal.remove(); modal = null; document.body.style.overflow = ""; } }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("a[data-yt]");
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    var t = a.getAttribute("data-t");
+    modal = document.createElement("div");
+    modal.className = "ytm" + (a.hasAttribute("data-short") ? " short" : "");
+    modal.innerHTML = '<div class="box"><button class="x" aria-label="Close video">×</button><iframe allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video"></iframe></div>';
+    modal.querySelector("iframe").src = NC + a.getAttribute("data-yt") + "?autoplay=1&rel=0&playsinline=1" + (t ? "&start=" + t : "");
+    modal.addEventListener("click", function (ev) { if (ev.target === modal || ev.target.classList.contains("x")) closeYt(); });
+    document.body.appendChild(modal); document.body.style.overflow = "hidden";
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeYt(); });
+
+  /* video carousel: arrows, swipe (native scroll), mouse drag, dots, gentle auto-slide that pauses on hover/touch */
+  document.querySelectorAll("[data-car]").forEach(function (car) {
+    var tr = car.querySelector(".car-track"), prev = car.querySelector(".prev"), next = car.querySelector(".next"), dotsEl = car.querySelector(".car-dots");
+    var items = [].slice.call(tr.children);
+    var max = function () { return tr.scrollWidth - tr.clientWidth - 2; };
+    // index of the first item whose left edge is in view
+    var cur = function () { var x = tr.scrollLeft, on = 0; items.forEach(function (it, i) { if (it.offsetLeft - items[0].offsetLeft <= x + 10) on = i; }); return on; };
+    var to = function (i) { tr.scrollTo({ left: items[Math.max(0, Math.min(items.length - 1, i))].offsetLeft - items[0].offsetLeft, behavior: "smooth" }); };
+    var go = function (dir) {
+      if (dir > 0 && tr.scrollLeft >= max()) to(0);
+      else if (dir < 0 && tr.scrollLeft <= 2) tr.scrollTo({ left: tr.scrollWidth, behavior: "smooth" });
+      else to(cur() + dir);
+    };
+    var until = 0, hold = function () { until = Date.now() + 9000; };
+    prev.addEventListener("click", function () { go(-1); hold(); });
+    next.addEventListener("click", function () { go(1); hold(); });
+    items.forEach(function (it, i) { var d = document.createElement("button"); d.type = "button"; d.tabIndex = -1; d.addEventListener("click", function () { to(i); hold(); }); dotsEl.appendChild(d); });
+    var dots = [].slice.call(dotsEl.children);
+    var sync = function () {
+      var on = tr.scrollLeft >= max() ? items.length - 1 : cur();
+      dots.forEach(function (d, i) { d.classList.toggle("on", i === on); });
+      car.classList.toggle("at-start", tr.scrollLeft <= 2);
+    };
+    tr.addEventListener("scroll", function () { requestAnimationFrame(sync); }, { passive: true });
+    window.addEventListener("resize", sync); sync();
+    // mouse drag (touch uses native swipe); a drag must not open the video
+    var down = null, moved = false;
+    tr.addEventListener("pointerdown", function (e) { if (e.pointerType !== "mouse" || e.button) return; down = { x: e.clientX, l: tr.scrollLeft }; moved = false; });
+    window.addEventListener("pointermove", function (e) {
+      if (!down) return; var dx = e.clientX - down.x;
+      if (Math.abs(dx) > 6) { moved = true; car.classList.add("drag"); tr.scrollLeft = down.l - dx; }
+    });
+    window.addEventListener("pointerup", function () { if (down) { down = null; car.classList.remove("drag"); if (moved) { to(cur()); hold(); } } });
+    tr.addEventListener("click", function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    tr.addEventListener("dragstart", function (e) { e.preventDefault(); });
+    // auto-slide every 4.5s; pauses while hovered, touched, off screen or a video is open; off for ?static and reduced motion
+    var paused = false, seen = true;
+    car.addEventListener("mouseenter", function () { paused = true; });
+    car.addEventListener("mouseleave", function () { paused = false; });
+    tr.addEventListener("touchstart", hold, { passive: true });
+    if ("IntersectionObserver" in window) new IntersectionObserver(function (es) { seen = es[0].isIntersecting; }).observe(car);
+    if (!still) setInterval(function () { if (!paused && seen && Date.now() > until && !document.hidden && !document.querySelector(".ytm")) go(1); }, 4500);
+  });
+
   /* About page bubbles: gentle float, drift away from the cursor, tap/click opens a short line */
   var orbit = document.querySelector(".orbit");
   if (orbit) {
@@ -97,7 +186,17 @@
         e.stopPropagation();
         var was = b.classList.contains("open");
         bubs.forEach(function (x) { x.classList.remove("open"); });
-        if (!was) b.classList.add("open");
+        if (!was) {
+          // keep the tooltip on screen (bubbles near a phone's edge would push it off)
+          var tip = b.querySelector(".tip");
+          if (tip) {
+            tip.style.setProperty("--tx", "0px");
+            var tr = tip.getBoundingClientRect(), vw = document.documentElement.clientWidth, sh = 0;
+            if (tr.right > vw - 10) sh = vw - 10 - tr.right; else if (tr.left < 10) sh = 10 - tr.left;
+            tip.style.setProperty("--tx", sh + "px");
+          }
+          b.classList.add("open");
+        }
       });
     });
     document.addEventListener("click", function () { bubs.forEach(function (x) { x.classList.remove("open"); }); });
