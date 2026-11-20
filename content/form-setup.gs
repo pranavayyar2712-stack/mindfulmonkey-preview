@@ -10,7 +10,17 @@
 //   - in "Add a bootcamp, retreat or workshop":    title  Event photo (optional)
 const NOTIFY = "pranavayyar2712@gmail.com";
 
+// Google lets people untick individual permissions. Check them all first, so a run never stops halfway
+// (half-made forms) and the on-submit email never fails silently. If this throws, run again and on Google's
+// permission screen tick "Select all" before Continue.
+function needAllPermissions() {
+  MailApp.getRemainingDailyQuota();   // send email
+  ScriptApp.getProjectTriggers();     // run when the form is submitted
+  DriveApp.getRootFolder();           // share uploaded photos
+}
+
 function setupWebsiteForm() {
+  needAllPermissions();
   const form = FormApp.create("Update my website");
   form.setTitle("Update my website · Mindful Monkey")
     .setDescription("Add an article, interview, video, event or testimonial, change a price or batch date, or take something off mindfulmonkeycoach.com.\nPick one thing per submission. Your website updates itself within about an hour.")
@@ -106,6 +116,7 @@ function setupWebsiteForm() {
 // run this instead of running setup again: it reuses the form and sheet already in the "Mindful Monkey website"
 // folder, (re)creates the on-submit trigger and logs the same links.
 function finishSetup() {
+  needAllPermissions();
   const folder = DriveApp.getFoldersByName("Mindful Monkey website").next();
   const form = FormApp.openById(folder.getFilesByType(MimeType.GOOGLE_FORMS).next().getId());
   const ss = SpreadsheetApp.openById(folder.getFilesByType(MimeType.GOOGLE_SHEETS).next().getId());
@@ -120,6 +131,7 @@ function finishSetup() {
     csvUrl: "https://docs.google.com/spreadsheets/d/" + ss.getId() + "/export?format=csv&gid=" + sheet.getSheetId(),
   };
   Logger.log(JSON.stringify(out, null, 2));
+  MailApp.sendEmail(NOTIFY, "Website form is set up", JSON.stringify(out, null, 2));
   return out;
 }
 
