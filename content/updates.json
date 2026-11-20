@@ -42,23 +42,15 @@
       "label": "TEST ENTRY: YourStory feature"
     }
   ],
-  "events": [
-    {
-      "type": "Retreat",
-      "title": "Back to Your Roots (TEST)",
-      "dates": "12 to 15 Feb 2027",
-      "end": "2027-02-15",
-      "where": "North Goa",
-      "price": 28000,
-      "unit": "per person, stay included",
-      "d": "TEST ENTRY. Four days of movement and play outdoors.",
-      "img": "u/7d4f7f8576ae.jpg"
-    }
-  ],
+  "events": [],
   "removed": [
     {
       "kind": "press",
       "key": "https://www.imdb.com/name/nm18615165/"
+    },
+    {
+      "kind": "event",
+      "key": "Back to Your Roots (TEST)"
     }
   ]
 }
